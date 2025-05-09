@@ -22,16 +22,16 @@ namespace UserService.Controllers
             _logger = logger;
         }
 
-        // Hent bruger baseret på ID
-        [HttpGet("{customerId}", Name = "GetCustomerById")]
-        public async Task<IActionResult> Get(Guid customerId)
+        // Hent bruger baseret på UserName
+        [HttpGet("{UserName}", Name = "GetCustomerByUserName")]
+        public async Task<IActionResult> Get(Customer UserName)
         {
-            _logger.LogInformation("Henter bruger med ID: {customerId}", customerId);
-            var customer = await _userService.GetCustomerByIdAsync(customerId.ToString());
+            _logger.LogInformation("Henter bruger med ID: {UserName}", UserName);
+            var customer = await _userService.GetCustomerByIdAsync(UserName.ToString());
 
             if (customer == null)
             {
-                _logger.LogWarning("Bruger med ID {customerId} blev ikke fundet", customerId);
+                _logger.LogWarning("Bruger med ID {customerId} blev ikke fundet", UserName);
                 return NotFound(new { message = "User not found" });
             }
 
@@ -65,7 +65,7 @@ namespace UserService.Controllers
             _logger.LogInformation("Opdaterer bruger med ID: {customerId}", customerId);
             updatedCustomer.Id = customerId; // Sørg for at ID er korrekt, når den opdateres
 
-            var updated = await _userService.UpdateCustomerAsync(userId.ToString(), updatedCustomer);
+            var updated = await _userService.UpdateCustomerAsync(customerId.ToString(), updatedCustomer);
             if (updated == null)
             {
                 _logger.LogWarning("Bruger med ID {UserId} blev ikke opdateret", customerId);
