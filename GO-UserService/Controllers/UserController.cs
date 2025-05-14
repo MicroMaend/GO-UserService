@@ -13,7 +13,8 @@ using MongoDB.Bson;
 namespace UserService.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/user")]
+
     public class UserController : ControllerBase
     {
         private readonly IUserDBService _userService;
