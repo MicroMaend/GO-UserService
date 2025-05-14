@@ -1,13 +1,17 @@
-﻿using System;
+﻿using GOCore;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using GOCore;
-namespace Services;
-public interface IUserDBService
+
+namespace Services
 {
-    Task<Customer> CreateCustomerAsync(Customer customer);
-    Task<Customer> GetCustomerByIdAsync(string id);
-    Task<IEnumerable<Customer>> GetAllCustomersAsync();
-    Task<Customer> UpdateCustomerAsync(string id, Customer updatedCustomer);
-    Task<bool> DeleteCustomerAsync(string id);
+    public interface IUserDBService
+    {
+        Task<User> CreateUserAsync(User user);
+        Task<User> GetUserByIdAsync(Guid userId);
+        Task<User> GetUserByNameAsync(string name);
+        Task<IEnumerable<User>> GetAllUsersAsync();
+        Task<User> UpdateUserAsync(string id, User updatedUser);
+        Task<bool> DeleteUserAsync(string id);
+    }
 }

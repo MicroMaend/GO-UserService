@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 using Services;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson;
 
 namespace UserService.Controllers
 {
@@ -22,78 +25,94 @@ namespace UserService.Controllers
             _logger = logger;
         }
 
-        // Hent bruger baseret på UserName
-        [HttpGet("{UserName}", Name = "GetCustomerByUserName")]
-        public async Task<IActionResult> Get(Customer UserName)
+        // Hent bruger baseret pï¿½ ID
+        [HttpGet("{userId}", Name = "GetUserById")]
+        public async Task<IActionResult> GetById(Guid userId)
         {
-            _logger.LogInformation("Henter bruger med ID: {UserName}", UserName);
-            var customer = await _userService.GetCustomerByIdAsync(UserName.ToString());
+            _logger.LogInformation("Henter bruger med ID: {UserId}", userId);
+            var user = await _userService.GetUserByIdAsync(userId);
 
-            if (customer == null)
+            if (user == null)
             {
-                _logger.LogWarning("Bruger med ID {customerId} blev ikke fundet", UserName);
+                _logger.LogWarning("Bruger med ID {UserId} blev ikke fundet", userId);
                 return NotFound(new { message = "User not found" });
             }
 
-            return Ok(customer);
+            return Ok(user);
+        }
+
+        // Hent bruger baseret pï¿½ brugernavn
+        [HttpGet("name/{userName}", Name = "GetUserByUserName")]
+        public async Task<IActionResult> GetByUserName(string userName)
+        {
+            _logger.LogInformation("Henter bruger med navn: {UserName}", userName);
+            var user = await _userService.GetUserByNameAsync(userName);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Bruger med navn {UserName} blev ikke fundet", userName);
+                return NotFound(new { message = "User not found" });
+            }
+
+            return Ok(user);
         }
 
         // Opret bruger
         [HttpPost("add")]
-        public async Task<IActionResult> Add([FromBody] Customer customer)
+        public async Task<IActionResult> Add([FromBody] User user)
         {
-            customer.Id = Guid.NewGuid(); // Generer ID automatisk
-            _logger.LogInformation("Tilføjede ny bruger: {UserName}, ID: {customerId}", customer.Name, customer.Id);
-            var createdCustomer = await _userService.CreateCustomerAsync(customer);
+            user.Id = Guid.NewGuid();
+            _logger.LogInformation("Tilfï¿½jede ny bruger: {UserName}, ID: {UserId}", user.Name, user.Id);
+            var createdUser = await _userService.CreateUserAsync(user);
 
-            return CreatedAtRoute("GetCustomerById", new { customerId = createdCustomer.Id }, createdCustomer);
+            return CreatedAtRoute("GetUserById", new { userId = createdUser.Id }, createdUser);
         }
 
         // Hent alle brugere
         [HttpGet("all")]
-        public async Task<IActionResult> GetAllCustomers()
+        public async Task<IActionResult> GetAllUsers()
         {
             _logger.LogInformation("Henter alle brugere.");
-            var customers = await _userService.GetAllCustomersAsync();
-            return Ok(customers);
+            var users = await _userService.GetAllUsersAsync();
+            return Ok(users);
         }
 
         // Opdater bruger
-        [HttpPut("{customerId}")]
-        public async Task<IActionResult> Update(Guid customerId, [FromBody] Customer updatedCustomer)
+        [HttpPut("{userId}")]
+        public async Task<IActionResult> Update(Guid userId, [FromBody] User updatedUser)
         {
-            _logger.LogInformation("Opdaterer bruger med ID: {customerId}", customerId);
-            updatedCustomer.Id = customerId; // Sørg for at ID er korrekt, når den opdateres
+            _logger.LogInformation("Opdaterer bruger med ID: {UserId}", userId);
+            updatedUser.Id = userId;
 
-            var updated = await _userService.UpdateCustomerAsync(customerId.ToString(), updatedCustomer);
+            var updated = await _userService.UpdateUserAsync(userId.ToString(), updatedUser);
             if (updated == null)
             {
-                _logger.LogWarning("Bruger med ID {UserId} blev ikke opdateret", customerId);
+                _logger.LogWarning("Bruger med ID {UserId} blev ikke opdateret", userId);
                 return NotFound(new { message = "User not found or could not be updated" });
             }
 
-            _logger.LogInformation("Bruger med ID {UserId} blev opdateret", customerId);
+            _logger.LogInformation("Bruger med ID {UserId} blev opdateret", userId);
             return Ok(updated);
         }
 
         // Slet bruger
-        [HttpDelete("{customerId}")]
-        public async Task<IActionResult> Delete(Guid customerId)
+        [HttpDelete("{userId}")]
+        public async Task<IActionResult> Delete(Guid userId)
         {
-            _logger.LogInformation("Sletter bruger med ID: {UserId}", customerId);
-            var success = await _userService.DeleteCustomerAsync(customerId.ToString());
+            _logger.LogInformation("Sletter bruger med ID: {UserId}", userId);
+            var success = await _userService.DeleteUserAsync(userId.ToString());
 
             if (!success)
             {
-                _logger.LogWarning("Bruger med ID {UserId} blev ikke slettet", customerId);
+                _logger.LogWarning("Bruger med ID {UserId} blev ikke slettet", userId);
                 return NotFound(new { message = "User not found or could not be deleted" });
             }
 
-            _logger.LogInformation("Bruger med ID {UserId} blev slettet", customerId);
-            return NoContent(); // Returner 204 No Content når brugeren er slettet
+            _logger.LogInformation("Bruger med ID {UserId} blev slettet", userId);
+            return NoContent();
         }
 
-        // Hent version info
+        // Version info
         [HttpGet("version")]
         public async Task<IActionResult> GetVersion()
         {
@@ -112,7 +131,7 @@ namespace UserService.Controllers
                 var ipa = ips.FirstOrDefault()?.MapToIPv4().ToString() ?? "unknown";
 
                 properties.Add("hosted-at-address", ipa);
-                _logger.LogInformation("Version info hentet: {Version}, Hosted på: {IPAddress}", ver, ipa);
+                _logger.LogInformation("Version info hentet: {Version}, Hosted pï¿½: {IPAddress}", ver, ipa);
             }
             catch (Exception ex)
             {

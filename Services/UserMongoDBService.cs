@@ -3,72 +3,69 @@ using GOCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
+
 namespace Services
 {
     public class UserMongoDBService : IUserDBService
     {
-        private readonly IMongoCollection<Customer> _customerCollection;
+        private readonly IMongoCollection<User> _userCollection;
         private readonly ILogger<UserMongoDBService> _logger;
 
-        // Konstruktør med korrekt parameter og lukning af parentes
         public UserMongoDBService(ILogger<UserMongoDBService> logger, IConfiguration configuration)
         {
             _logger = logger;
 
-            // Hent konfigurationen fra appsettings eller miljøvariabler
-            var connectionString = configuration["MongoConnectionString"] ?? "<blank>";
-            var databaseName = configuration["DatabaseName"] ?? "<blank>";
-            var collectionName = configuration["CollectionName"] ?? "<blank>";
+            var connectionString = configuration.GetConnectionString("MongoDb");
+            var client = new MongoClient(connectionString);
 
-            _logger.LogInformation($"Connected to MongoDB using: {connectionString}");
-            _logger.LogInformation($"Using database: {databaseName}");
-            _logger.LogInformation($"Using Collection: {collectionName}");
+            var database = client.GetDatabase("GO-UserServiceDB");
 
+            _userCollection = database.GetCollection<User>("Users");
+        }
+
+        public async Task<User> CreateUserAsync(User user)
+        {
             try
             {
-                var client = new MongoClient(connectionString);
-                var database = client.GetDatabase(databaseName);
-                _customerCollection = database.GetCollection<Customer>(collectionName);
+                user.Id = Guid.NewGuid(); // Sørg for en valid GUID
+                await _userCollection.InsertOneAsync(user);
+                return user;
             }
             catch (Exception ex)
             {
-                _logger.LogError("Failed to connect to MongoDB: {0}", ex.Message);
+                _logger.LogError(ex, "Fejl ved oprettelse af bruger i MongoDB.");
+                throw;
             }
         }
 
-        // Opret bruger i MongoDB
-        public async Task<Customer> CreateCustomerAsync(Customer customer)
+
+
+        public async Task<User> GetUserByIdAsync(Guid userId)
         {
-            // TODO: Validering af user og fejlhåndtering
-            await _customerCollection.InsertOneAsync(customer);
-            return customer;
+            var user = await _userCollection.Find(u => u.Id == userId).FirstOrDefaultAsync();
+            return user;
         }
 
-        // Hent bruger baseret på ID
-        public async Task<Customer> GetCustomerByIdAsync(string id)
+        public async Task<User> GetUserByNameAsync(string name)
         {
-            var customer = await _customerCollection.Find(u => u.Id.ToString() == id).FirstOrDefaultAsync();
-            return customer;
+            var user = await _userCollection.Find(u => u.Name == name).FirstOrDefaultAsync();
+            return user;
         }
 
-        // Hent alle brugere
-        public async Task<IEnumerable<Customer>> GetAllCustomersAsync()
+        public async Task<IEnumerable<User>> GetAllUsersAsync()
         {
-            var customers = await _customerCollection.Find(u => true).ToListAsync();
-            return customers;
+            return await _userCollection.Find(u => true).ToListAsync();
         }
 
-        // Opdater bruger
-        public async Task<Customer> UpdateCustomerAsync(string id, Customer updatedCustomer)
+        public async Task<User> UpdateUserAsync(string id, User updatedUser)
         {
-            var result = await _customerCollection.ReplaceOneAsync(u => u.Id.ToString() == id, updatedCustomer);
-            return updatedCustomer;
+            var result = await _userCollection.ReplaceOneAsync(u => u.Id == Guid.Parse(id), updatedUser);
+            return updatedUser;
         }
 
-        // Slet bruger
-        public async Task<bool> DeleteCustomerAsync(string id)
+        public async Task<bool> DeleteUserAsync(string id)
         {
-            var result = await _customerCollection.DeleteOneAsync(u => u.Id.ToString() == id);
+            var result = await _userCollection.DeleteOneAsync(u => u.Id == Guid.Parse(id));
             return result.DeletedCount > 0;
         }
     }
