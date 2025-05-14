@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  userservice:
+    build:
+      context: .
+      dockerfile: GO-UserService/Dockerfile
+    image: userservice:latest
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
