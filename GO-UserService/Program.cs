@@ -11,7 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 Console.WriteLine("Appen starter...");
-
+var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings()
+    .GetCurrentClassLogger();
 // Registrér korrekt Guid-serializer for MongoDB
 BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard));
 
@@ -34,6 +35,9 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "User Service API", Version = "v1" });
 });
+
+builder.Logging.ClearProviders();
+builder.Host.UseNLog();
 
 var app = builder.Build();
 
