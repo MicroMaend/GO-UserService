@@ -18,6 +18,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Abstractions;
+using MongoDB.Driver; // Tilføj denne namespace
 
 Console.WriteLine("UserService starter...");
 var logger = NLog.LogManager.Setup().LoadConfigurationFromAppSettings()
@@ -81,12 +82,25 @@ var secretKey = builder.Configuration["Jwt__Secret"];
 var issuer = builder.Configuration["Jwt__Issuer"];
 var audience = builder.Configuration["Jwt__Audience"];
 
+// Hent UserService MongoDB connection string fra Vault
+var userMongoConnectionString = builder.Configuration["Mongo__UserServiceConnectionString"];
+
 // Print connection string til debug
-Console.WriteLine("Mongo Connection String: " + builder.Configuration.GetConnectionString("MongoDb"));
+Console.WriteLine("Mongo Connection String: " + userMongoConnectionString);
 Console.WriteLine($"Jwt__Secret fra Vault i UserService: '{secretKey}' (Length: {secretKey?.Length ?? 0})");
 Console.WriteLine($"Jwt__Issuer fra Vault i UserService: '{issuer}'");
 Console.WriteLine($"Jwt__Audience fra Vault i UserService: '{audience}'");
 
+
+// Registrér MongoClient for UserService
+builder.Services.AddSingleton<IMongoClient>(_ =>
+{
+    if (string.IsNullOrWhiteSpace(userMongoConnectionString))
+    {
+        throw new Exception("MongoDB connection string for UserService mangler fra Vault!");
+    }
+    return new MongoClient(userMongoConnectionString);
+});
 
 // Registrér services
 builder.Services.AddSingleton<IUserDBService, UserMongoDBService>();
