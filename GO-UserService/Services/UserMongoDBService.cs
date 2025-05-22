@@ -3,23 +3,27 @@ using GOCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 
-
 namespace Services
 {
     public class UserMongoDBService : IUserDBService
     {
         private readonly IMongoCollection<User> _userCollection;
         private readonly ILogger<UserMongoDBService> _logger;
+        private readonly string _connectionString;
 
         public UserMongoDBService(ILogger<UserMongoDBService> logger, IConfiguration configuration)
         {
             _logger = logger;
+            _connectionString = configuration["Mongo__UserServiceConnectionString"]; // Hent direkte fra konfigurationen
 
-            var connectionString = configuration.GetConnectionString("MongoDb");
-            var client = new MongoClient(connectionString);
+            if (string.IsNullOrEmpty(_connectionString))
+            {
+                _logger.LogError("MongoDB connection string for UserService mangler fra konfigurationen (Vault).");
+                throw new InvalidOperationException("MongoDB connection string for UserService mangler fra konfigurationen (Vault).");
+            }
 
+            var client = new MongoClient(_connectionString);
             var database = client.GetDatabase("GO-UserServiceDB");
-
             _userCollection = database.GetCollection<User>("Users");
         }
 
@@ -37,8 +41,6 @@ namespace Services
                 throw;
             }
         }
-
-
 
         public async Task<User> GetUserByIdAsync(Guid userId)
         {
