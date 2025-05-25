@@ -77,8 +77,9 @@ namespace UserService.Controllers
 
         }
 
-        // Opret bruger - Kun admins
+        // Opret bruger - Alle kan tilgå dette endpoint
         [HttpPost("add")]
+        [AllowAnonymous]
         public async Task<IActionResult> Add([FromBody] User user)
         {
             user.Id = Guid.NewGuid();
