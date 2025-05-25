@@ -79,7 +79,6 @@ namespace UserService.Controllers
 
         // Opret bruger - Kun admins
         [HttpPost("add")]
-        [Authorize(Roles = "Admin")] // Kun brugere i "Admin" rollen kan tilgå dette endpoint
         public async Task<IActionResult> Add([FromBody] User user)
         {
             user.Id = Guid.NewGuid();
