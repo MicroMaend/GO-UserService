@@ -88,7 +88,7 @@ namespace UserService.Controllers
             if (user == null)
             {
                 _logger.LogWarning("Bruger med ID {UserId} blev ikke fundet", userId);
-                return NotFound(new { message = "User not found" });
+                return Ok("Ukendt bruger"); // Returner en standard besked hvis brugeren ikke findes
             }
 
             return Ok(user.UserName);
