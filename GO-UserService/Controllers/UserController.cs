@@ -76,6 +76,23 @@ namespace UserService.Controllers
             }
 
         }
+        
+        // Hent brugernavn baseret på ID - Tilgængelig for alle
+        [HttpGet("username/{userId}", Name = "GetUserNameById")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetUserNameById(Guid userId)
+        {
+            _logger.LogInformation("Henter brugernavn for bruger med ID: {UserId}", userId);
+            var user = await _userService.GetUserByIdAsync(userId);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Bruger med ID {UserId} blev ikke fundet", userId);
+                return NotFound(new { message = "User not found" });
+            }
+
+            return Ok(user.UserName);
+        }
 
         // Opret bruger - Alle kan tilgå dette endpoint
         [HttpPost("add")]
